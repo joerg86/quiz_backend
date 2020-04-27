@@ -1,0 +1,13 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+*.pyc
+env
+.vscode
+settings_local.py
+db.sqlite3
+assets/bundles/
+node_modules/*
+media/*
+webpack-stats.json
+.env
+.coverage
+coverage
