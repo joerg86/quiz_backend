@@ -123,5 +123,5 @@ STATIC_URL = '/static/'
 STATIC_ROOT = '/home/joergs/html/static'
 
 ALLOWED_HOSTS = [
-    "api.qteams.team"
+    "api.qteams.team", "localhost"
 ]
