@@ -27,9 +27,12 @@ class QuestionAdmin(admin.ModelAdmin):
 class AnswerAdmin(admin.ModelAdmin):
     list_display =("author", "question", "answer", "created_at")
 
+class TopicAdmin(admin.ModelAdmin):
+    list_display = ("code", "name")
+
 # Register your models here.
 admin.site.register(Team, TeamAdmin)
-admin.site.register(Topic)
+admin.site.register(Topic, TopicAdmin)
 admin.site.register(Question, QuestionAdmin)
 admin.site.register(Round)
 admin.site.register(Answer)

@@ -2,7 +2,8 @@ from django.db import models
 
 # Create your models here.
 class Topic(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField("Name", max_length=100)
+    code = models.CharField("Code", max_length=20, unique=True)
 
     def __str__(self):
         return self.name
@@ -12,7 +13,7 @@ class Topic(models.Model):
         verbose_name_plural = "Themen"
 
 class Question(models.Model):
-    round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.CASCADE)
+    round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.SET_NULL, null=True)
     author = models.ForeignKey("auth.User", verbose_name="Autor", on_delete=models.CASCADE)
     topic = models.ForeignKey("Topic", on_delete=models.CASCADE)
     question = models.TextField("Frage")
