@@ -12,6 +12,8 @@ class Topic(models.Model):
         verbose_name = "Thema"
         verbose_name_plural = "Themen"
 
+        ordering = ("code",)
+
 class Question(models.Model):
     round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.SET_NULL, null=True)
     author = models.ForeignKey("auth.User", verbose_name="Autor", on_delete=models.CASCADE)
