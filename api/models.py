@@ -15,7 +15,7 @@ class Topic(models.Model):
         ordering = ("code",)
 
 class Question(models.Model):
-    round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.SET_NULL, null=True)
+    round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.SET_NULL, null=True, blank=True)
     author = models.ForeignKey("auth.User", verbose_name="Autor", on_delete=models.CASCADE)
     topic = models.ForeignKey("Topic", on_delete=models.CASCADE)
     question = models.TextField("Frage")
