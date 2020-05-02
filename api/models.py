@@ -12,7 +12,7 @@ class Topic(models.Model):
         verbose_name_plural = "Themen"
 
 class Question(models.Model):
-    round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.CASCADE, null=True)
+    round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.CASCADE)
     author = models.ForeignKey("auth.User", verbose_name="Autor", on_delete=models.CASCADE)
     topic = models.ForeignKey("Topic", on_delete=models.CASCADE)
     question = models.TextField("Frage")
