@@ -12,10 +12,12 @@ class Topic(models.Model):
         verbose_name_plural = "Themen"
 
 class Question(models.Model):
+    round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.CASCADE, null=True)
     author = models.ForeignKey("auth.User", verbose_name="Autor", on_delete=models.CASCADE)
     topic = models.ForeignKey("Topic", on_delete=models.CASCADE)
     question = models.TextField("Frage")
     model_answer = models.TextField("Musterantwort")
+
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
@@ -84,7 +86,6 @@ PHASE_CHOICES = (
 
 class Round(models.Model):
     team = models.ForeignKey("Team", on_delete=models.CASCADE, verbose_name="Team")
-    questions = models.ManyToManyField("Question", blank=True, verbose_name="Fragen")
     current_question = models.ForeignKey("Question", on_delete=models.CASCADE, related_name="round_current_set", verbose_name="Aktuelle Frage", null=True, blank=True)
 
     phase = models.CharField("Phase", max_length=30, choices=PHASE_CHOICES, default="question")
