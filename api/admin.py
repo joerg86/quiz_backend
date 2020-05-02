@@ -19,6 +19,7 @@ class TeamAdmin(admin.ModelAdmin):
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ("author", "topic", "question", "created_at")
     search_fields = ("topic__name", "model_answer", "question")
+    autocomplete_fields = ("topic",)
 
     inlines = [
         AnswerInline
@@ -29,6 +30,7 @@ class AnswerAdmin(admin.ModelAdmin):
 
 class TopicAdmin(admin.ModelAdmin):
     list_display = ("code", "name")
+    search_fields = ("code", "name")
 
 # Register your models here.
 admin.site.register(Team, TeamAdmin)

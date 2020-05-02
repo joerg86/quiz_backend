@@ -6,7 +6,7 @@ class Topic(models.Model):
     code = models.CharField("Code", max_length=20, unique=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.code} {self.name}"
 
     class Meta:
         verbose_name = "Thema"
