@@ -39,18 +39,22 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'api.apps.ApiConfig',
+    'graphql_auth',
+    'graphene_django',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+CORS_ORIGIN_ALLOW_ALL = True
 ROOT_URLCONF = 'qteams.urls'
 
 TEMPLATES = [
@@ -82,6 +86,9 @@ DATABASES = {
     }
 }
 
+GRAPHENE = {
+    'SCHEMA': 'qteams.schema.schema'
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators

@@ -11,6 +11,7 @@ class RoundInline(admin.StackedInline):
 class TeamAdmin(admin.ModelAdmin):
     list_display = ("name", "creator", "created_at")
     search_fields = ("name",)
+    autocomplete_fields = ["topic"]
 
     inlines = [
         RoundInline,
