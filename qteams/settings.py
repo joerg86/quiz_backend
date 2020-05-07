@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'graphql_auth',
     'graphene_django',
     'corsheaders',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -74,7 +75,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'qteams.wsgi.application'
+ASGI_APPLICATION = "qteams.routing.application"
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
