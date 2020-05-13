@@ -41,7 +41,7 @@ class Answer(models.Model):
     author = models.ForeignKey("auth.User", verbose_name="Autor", on_delete=models.CASCADE)
     question = models.ForeignKey("Question", verbose_name="Frage", on_delete=models.CASCADE)
     answer = models.TextField("Antwort")
-    score = models.PositiveIntegerField("Bewertung", choices=SCORE_CHOICES)
+    score = models.PositiveIntegerField("Bewertung", choices=SCORE_CHOICES, null=True, blank=True)
 
     created_at = models.DateTimeField("Erstellt am", auto_now_add=True)
 
@@ -51,6 +51,7 @@ class Answer(models.Model):
     class Meta:
         verbose_name = "Antwort"
         verbose_name_plural = "Antworten"
+        unique_together = ("author", "question")
 
 STATE_CHOICES = (
     ("open", "offen"),
@@ -97,11 +98,18 @@ class Team(models.Model):
             return self.questions.filter(author=user).count() > 0
         if self.state == "answer":
             if self.current_question:
+                if self.current_question.author == user:
+                    return True
                 return self.current_question.answer_set.filter(author=user).count() > 0
             return False            
 
     def get_user_question(self, user):
+        """Get the question that was submitted by the specified user."""
         return self.questions.filter(author=user).first()
+
+    def get_user_answer(self, user):
+        """Get the answer to the current question submitted by the user."""
+        return self.current_question.answer_set.filter(author=user).first()
 
     def __str__(self):
         return self.name

@@ -38,10 +38,6 @@ class QuestionNode(DjangoObjectType):
 
 class TeamNode(DjangoObjectType):
     user_done = graphene.Boolean()
-    user_question = graphene.Field(QuestionNode)
-
-    def resolve_user_question(parent, info):
-        return parent.get_user_question(info.context.user)
 
     def resolve_user_done(parent, info):
         return parent.user_done(info.context.user)
@@ -63,6 +59,7 @@ class TopicNode(DjangoObjectType):
 class Subscription(graphene.ObjectType):
     team_updated = graphene.Field(TeamNode, id=graphene.ID())
 
+    @login_required
     def resolve_team_updated(root, info, id):
         return root.filter(
             lambda event:
@@ -114,9 +111,62 @@ class PostQuestionMutation(relay.ClientIDMutation):
 
         return PostQuestionMutation(team=team)
 
+       
+class PostAnswerMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+        answer = graphene.String(required=True)
+
+    team = graphene.Field(TeamNode)
+
+    @classmethod
+    @login_required
+    def mutate_and_get_payload(cls, root, info, id, answer):
+        team = Team.objects.get(pk=from_global_id(id)[1])
+
+        team.current_question.answer_set.create(
+            author=info.context.user,
+            answer=answer
+        )
+
+        if team.current_question.answer_set.count() == team.members.count() - 1:
+            team.state = "scoring"
+
+        team.save()
+
+        return PostAnswerMutation(team=team)
+
+class ScoreEnum(graphene.Enum):
+    RIGHT = 3
+    PARTIAL = 1
+    WRONG = 0
+
+class ScoreAnswerMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+        score = ScoreEnum()
+    
+    answer = graphene.Field(AnswerNode)
+
+    @classmethod
+    @login_required
+    def mutate_and_get_payload(cls, root, info, id, score):
+        answer = Answer.objects.get(pk=from_global_id(id)[1])
+        answer.score = score
+        answer.save()
+        for team in answer.question.team_set.all():
+            team.save()
+
+
+        return ScoreAnswerMutation(answer=answer)
+
+
 class Mutation(ObjectType):
     next_phase = NextPhaseMutation.Field()
     post_question = PostQuestionMutation.Field()
+    post_answer = PostAnswerMutation.Field()
+    score_answer = ScoreAnswerMutation.Field()
+
 
 class Query(ObjectType):
     team = relay.Node.Field(TeamNode)

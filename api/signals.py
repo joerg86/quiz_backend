@@ -10,4 +10,4 @@ def m2m_question(sender, instance, **kwargs):
     print("M2M changed  ")
     post_save_subscription(Team, instance, False, **kwargs)
 
-m2m_changed.connect(m2m_question, sender=Team.questions.through, dispatch_uid="team_question_post")
+#m2m_changed.connect(m2m_question, sender=Team.questions.through, dispatch_uid="team_question_post")
