@@ -39,10 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'api.apps.ApiConfig',
-    'graphql_auth',
     'graphene_django',
     'corsheaders',
     'channels',
+    'graphene_subscriptions',
 ]
 
 MIDDLEWARE = [
@@ -94,7 +94,10 @@ DATABASES = {
 }
 
 GRAPHENE = {
-    'SCHEMA': 'qteams.schema.schema'
+    'SCHEMA': 'qteams.schema.schema',
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+    ],
 }
 
 # Password validation
@@ -138,4 +141,9 @@ STATIC_ROOT = '/home/joergs/html/static'
 
 ALLOWED_HOSTS = [
     "api.qteams.team", "localhost"
+]
+
+AUTHENTICATION_BACKENDS = [
+    'graphql_jwt.backends.JSONWebTokenBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]

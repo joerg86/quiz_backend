@@ -15,7 +15,6 @@ class Topic(models.Model):
         ordering = ("code",)
 
 class Question(models.Model):
-    round = models.ForeignKey("Round", verbose_name="Runde", on_delete=models.SET_NULL, null=True, blank=True)
     author = models.ForeignKey("auth.User", verbose_name="Autor", on_delete=models.CASCADE)
     topic = models.ForeignKey("Topic", on_delete=models.CASCADE)
     question = models.TextField("Frage")
@@ -55,8 +54,12 @@ class Answer(models.Model):
 
 STATE_CHOICES = (
     ("open", "offen"),
-    ("playing", "spielt"),
+    ("question", "Erarbeitungsphase"),
+    ("answer", "Fragephase"),
+    ("scoring", "Bewertungsphase"),
+    ("done", "Abgeschlossen"),
     ("archived", "archiviert")
+
 )
 MODE_CHOICES = (
     ("train", "Training"),
@@ -68,10 +71,37 @@ class Team(models.Model):
     name = models.CharField("Name", max_length=100)
     members = models.ManyToManyField("auth.User", related_name="teams", verbose_name="Mitglieder")
 
+    questions = models.ManyToManyField("Question", verbose_name="Fragen", help_text="Fragen der aktuellen Runde", blank=True)
+    current_question = models.ForeignKey("Question", on_delete=models.SET_NULL, related_name="team_current_set", verbose_name="Aktuelle Frage", null=True, blank=True)
+
     state = models.CharField("Status", max_length=30, choices=STATE_CHOICES, default="open")
     mode = models.CharField("Modus", max_length=30, choices=MODE_CHOICES, default="train")
 
     created_at = models.DateTimeField("Erstellt am", auto_now_add=True)
+
+    def next_state(self):
+        """Return the next state of the team"""
+
+        if self.state in ["open", "done"]:
+            self.questions.clear()
+            self.state = "question"
+
+        if self.state == "scoring":
+            self.state = "done"
+        
+        self.save()
+
+    def user_done(self, user):
+        """Checks if user is done for this phase"""
+        if self.state == "question":
+            return self.questions.filter(author=user).count() > 0
+        if self.state == "answer":
+            if self.current_question:
+                return self.current_question.answer_set.filter(author=user).count() > 0
+            return False            
+
+    def get_user_question(self, user):
+        return self.questions.filter(author=user).first()
 
     def __str__(self):
         return self.name
@@ -79,22 +109,3 @@ class Team(models.Model):
     class Meta:
         verbose_name = "Team"
         verbose_name_plural = "Teams"
-
-PHASE_CHOICES = (
-    ("question", "Erarbeitungsphase"),
-    ("answer", "Fragephase"),
-    ("scoring", "Bewertungsphase"),
-    ("done", "Abgeschlossen"),
-)
-
-class Round(models.Model):
-    team = models.ForeignKey("Team", on_delete=models.CASCADE, verbose_name="Team")
-    current_question = models.ForeignKey("Question", on_delete=models.CASCADE, related_name="round_current_set", verbose_name="Aktuelle Frage", null=True, blank=True)
-
-    phase = models.CharField("Phase", max_length=30, choices=PHASE_CHOICES, default="question")
-    created_at = models.DateTimeField("Erstellt am", auto_now_add=True)
-
-    class Meta:
-        ordering = ("created_at",)
-        verbose_name = "Runde"
-        verbose_name_plural = "Runden"
