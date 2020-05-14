@@ -230,6 +230,10 @@ class Query(ObjectType):
 
     me = graphene.Field(UserNode)
 
+    @login_required
+    def resolve_teams(self, info):
+        return Team.objects.filter(members=info.context.user)
+
     def resolve_me(self, info):
         user = info.context.user
         if user.is_authenticated:
