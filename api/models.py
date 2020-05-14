@@ -88,7 +88,11 @@ class Team(models.Model):
             self.state = "question"
 
         if self.state == "scoring":
-            self.state = "done"
+            self.current_question = self.questions.filter(answer=None).first()
+            if self.current_question:
+                self.state = "answer"
+            else:
+                self.state = "done"
         
         self.save()
 
