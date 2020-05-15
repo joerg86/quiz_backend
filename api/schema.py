@@ -211,6 +211,12 @@ class AddMemberMutation(relay.ClientIDMutation):
     @login_required
     def mutate_and_get_payload(cls, root, info, team_id, username):
         team = Team.objects.get(pk=from_global_id(team_id)[1])
+
+        if team.creator != info.context.user:
+            raise PermissionDenied("Nur der Teamersteller kann Mitglieder hinzufügen.")
+        if team.state not in ["done", "open"]:
+            raise PermissionDenied("In dieser Phase können keine Mitglieder hinzugefügt werden.")
+            
         user = User.objects.get(username=username)
         team.members.add(user)
         team.save()
