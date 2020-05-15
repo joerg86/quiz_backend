@@ -1,7 +1,7 @@
 from graphene import relay, ObjectType
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
-from api.models import Topic, Team, Question, Answer
+from api.models import Topic, Team, Question, Answer, Membership
 from django.contrib.auth.models import User
 import graphene
 from rx import Observable
@@ -39,6 +39,17 @@ class QuestionNode(DjangoObjectType):
         filter_fields = ("question", "model_answer")
         interfaces = (relay.Node,)
 
+class MembershipNode(DjangoObjectType):
+    score = graphene.Int()
+
+    def resolve_score(parent, info):
+        return parent.get_score()
+
+    class Meta:
+        model = Membership
+        fields = ["user", "right", "wrong", "partial", "joined"]
+        interfaces = (relay.Node,)
+
 
 class TeamNode(DjangoObjectType):
     user_done = graphene.Boolean()
@@ -49,7 +60,7 @@ class TeamNode(DjangoObjectType):
     class Meta:
         model = Team
         filter_fields = ["name"]
-        fields = ("name", "state", "mode", "created_at", "creator", "topic", "state", "current_question", "members")
+        fields = ("name", "state", "mode", "created_at", "creator", "topic", "state", "current_question", "members", "membership_set")
         interfaces = (relay.Node,)
 
     @classmethod

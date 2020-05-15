@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 
 # Create your models here.
 class Topic(models.Model):
@@ -87,9 +88,18 @@ class Team(models.Model):
 
         if self.state in ["open", "done"] and self.members.count() > 1:
             self.questions.clear()
+            self.membership_set.update(partial=0,wrong=0,right=0)
             self.state = "question"
 
         if self.state == "scoring":
+            for ms in self.membership_set.all():
+                scores = Answer.objects.filter(author=ms.user, question__team=self)
+                
+                ms.partial = scores.filter(score=1).count()
+                ms.right = scores.filter(score=3).count()
+                ms.wrong = scores.filter(score=0).count()
+                ms.save()
+
             self.current_question = self.questions.filter(answer=None).first()
             if self.current_question:
                 self.state = "answer"
