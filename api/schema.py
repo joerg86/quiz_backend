@@ -52,6 +52,13 @@ class TeamNode(DjangoObjectType):
         fields = ("name", "state", "mode", "created_at", "creator", "topic", "state", "current_question", "members")
         interfaces = (relay.Node,)
 
+    @classmethod
+    def get_node(cls, info, id):
+        team = Team.objects.get(pk=id)
+        if info.context.user not in team.members.all():
+            raise PermissionDenied("Benutzer nicht in diesem Team.")
+        return team
+
 class TopicFilter(django_filters.FilterSet):
     query = django_filters.CharFilter(method="query_filter")
 
@@ -72,14 +79,25 @@ class TopicNode(DjangoObjectType):
 class Subscription(graphene.ObjectType):
     team_updated = graphene.Field(TeamNode, id=graphene.ID())
 
+
     @login_required
     def resolve_team_updated(root, info, id):
+        team = Team.objects.get(pk=from_global_id(id)[1])
+        if info.context.user not in team.members.all():
+            raise PermissionDenied("Benutzer nicht im Team.")
+
+        def map_event(event):
+            team = event.instance
+            if info.context.user not in team.members.all():
+                raise PermissionDenied("Benutzer nicht im Team.")
+            return team
+
         return root.filter(
             lambda event:
                 event.operation == UPDATED and
                 isinstance(event.instance, Team) and
                 event.instance.pk == int(from_global_id(id)[1])
-        ).map(lambda event: event.instance)
+        ).map(map_event)
 
 class NextPhaseMutation(relay.ClientIDMutation):
     """Switch to the next phase of the team"""
@@ -222,6 +240,30 @@ class AddMemberMutation(relay.ClientIDMutation):
         team.save()
         return AddMemberMutation(team=team)
 
+class RemoveMemberMutation(relay.ClientIDMutation):
+    """Remove a member from a team"""
+    class Input:
+        team_id = graphene.ID(required=True)
+        username = graphene.String(required=True)
+
+    team = graphene.Field(TeamNode)
+
+    @classmethod
+    @login_required
+    def mutate_and_get_payload(cls, root, info, team_id, username):
+        team = Team.objects.get(pk=from_global_id(team_id)[1])
+
+        if team.creator != info.context.user:
+            raise PermissionDenied("Nur der Teamersteller kann Mitglieder entfernen.")
+        if team.state not in ["done", "open"]:
+            raise PermissionDenied("In dieser Phase können keine Mitglieder entfernt werden.")
+            
+        user = User.objects.get(username=username)
+        team.members.remove(user)
+        team.save()
+        return RemoveMemberMutation(team=team)
+
+
 class Mutation(ObjectType):
     next_phase = NextPhaseMutation.Field()
     post_question = PostQuestionMutation.Field()
@@ -229,6 +271,7 @@ class Mutation(ObjectType):
     score_answer = ScoreAnswerMutation.Field()
     create_team = CreateTeamMutation.Field()
     add_member = AddMemberMutation.Field()
+    remove_member = RemoveMemberMutation.Field()
 
 
 class Query(ObjectType):

@@ -85,7 +85,7 @@ class Team(models.Model):
     def next_state(self):
         """Return the next state of the team"""
 
-        if self.state in ["open", "done"]:
+        if self.state in ["open", "done"] and self.members.count() > 1:
             self.questions.clear()
             self.state = "question"
 
