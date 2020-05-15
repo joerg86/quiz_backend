@@ -73,7 +73,7 @@ class Team(models.Model):
     creator = models.ForeignKey("auth.User", related_name="teams_as_creator", on_delete=models.CASCADE, verbose_name="Gründer")
     topic = models.ForeignKey("Topic", verbose_name="Thema", on_delete=models.CASCADE)
     name = models.CharField("Name", max_length=100)
-    members = models.ManyToManyField("auth.User", related_name="teams", verbose_name="Mitglieder")
+    members = models.ManyToManyField("auth.User", related_name="teams", verbose_name="Mitglieder", through="Membership")
 
     current_question = models.ForeignKey("Question", on_delete=models.SET_NULL, related_name="team_current_set", verbose_name="Aktuelle Frage", null=True, blank=True)
 
@@ -123,3 +123,22 @@ class Team(models.Model):
     class Meta:
         verbose_name = "Team"
         verbose_name_plural = "Teams"
+
+class Membership(models.Model):
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
+    team = models.ForeignKey("Team", on_delete=models.CASCADE)
+
+    right = models.PositiveIntegerField("richtig", default=0)
+    partial = models.PositiveIntegerField("tlw. richtig", default=0)
+    wrong = models.PositiveIntegerField("falsch", default=0)
+
+    joined = models.DateTimeField(auto_now_add=True)
+
+    def get_score(self):
+        return self.right * 3 + self.partial * 1
+
+    class Meta:
+        verbose_name = "Mitgliedschaft"
+        verbose_name_plural = "Mitgliedschaften"
+
+        unique_together = ("user", "team")
