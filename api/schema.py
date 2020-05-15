@@ -91,6 +91,14 @@ class NextPhaseMutation(relay.ClientIDMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, id):
         team = Team.objects.get(pk=from_global_id(id)[1])
+
+        if team.state == "scoring":
+            if team.current_question.author != info.context.user:
+                raise PermissionDenied("Nur der Fragesteller kann die Phase abschließen")
+        else:
+            if team.creator != info.context.user:
+                raise PermissionDenied("Nur der Ersteller des Teams kann die Phase abschließen.")
+
         team.next_state()
         return NextPhaseMutation(team=team)
        
@@ -107,9 +115,6 @@ class PostQuestionMutation(relay.ClientIDMutation):
     @login_required
     def mutate_and_get_payload(cls, root, info, id, question, model_answer):
         team = Team.objects.get(pk=from_global_id(id)[1])
-
-        if team.get_user_question(info.context.user):
-            raise PermissionDenied("Es wurde bereits eine Frage erstellt")
 
         team.questions.create(
             author=info.context.user,
@@ -169,11 +174,12 @@ class ScoreAnswerMutation(relay.ClientIDMutation):
     @login_required
     def mutate_and_get_payload(cls, root, info, id, score):
         answer = Answer.objects.get(pk=from_global_id(id)[1])
+        if answer.question.author != info.context.user:
+            raise PermissionDenied("Du musst Fragesteller sein, um diese Antwort zu bewerten.")
+
         answer.score = score
         answer.save()
-        for team in answer.question.team_set.all():
-            team.save()
-
+        answer.question.team.save()
 
         return ScoreAnswerMutation(answer=answer)
 

@@ -15,6 +15,7 @@ class Topic(models.Model):
         ordering = ("code",)
 
 class Question(models.Model):
+    team = models.ForeignKey("Team", null=True, blank=True, on_delete=models.SET_NULL, related_name="questions")
     author = models.ForeignKey("auth.User", verbose_name="Autor", on_delete=models.CASCADE)
     topic = models.ForeignKey("Topic", on_delete=models.CASCADE)
     question = models.TextField("Frage")
@@ -31,6 +32,8 @@ class Question(models.Model):
     class Meta:
         verbose_name = "Frage"
         verbose_name_plural = "Fragen"
+
+        unique_together = ("team", "author")
 
 SCORE_CHOICES = (
     (0, "falsch"),
@@ -72,7 +75,6 @@ class Team(models.Model):
     name = models.CharField("Name", max_length=100)
     members = models.ManyToManyField("auth.User", related_name="teams", verbose_name="Mitglieder")
 
-    questions = models.ManyToManyField("Question", verbose_name="Fragen", help_text="Fragen der aktuellen Runde", blank=True)
     current_question = models.ForeignKey("Question", on_delete=models.SET_NULL, related_name="team_current_set", verbose_name="Aktuelle Frage", null=True, blank=True)
 
     state = models.CharField("Status", max_length=30, choices=STATE_CHOICES, default="open")
