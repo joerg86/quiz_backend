@@ -255,7 +255,7 @@ class RemoveMemberMutation(relay.ClientIDMutation):
     """Remove a member from a team"""
     class Input:
         team_id = graphene.ID(required=True)
-        username = graphene.String(required=True)
+        username = graphene.String()
 
     team = graphene.Field(TeamNode)
 
@@ -264,12 +264,19 @@ class RemoveMemberMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(cls, root, info, team_id, username):
         team = Team.objects.get(pk=from_global_id(team_id)[1])
 
-        if team.creator != info.context.user:
+        if username:
+            user = User.objects.get(username=username)
+        else:
+            user = info.context.user
+
+        if team.creator != info.context.user and user != info.context.user:
             raise PermissionDenied("Nur der Teamersteller kann Mitglieder entfernen.")
         if team.state not in ["done", "open"]:
             raise PermissionDenied("In dieser Phase können keine Mitglieder entfernt werden.")
-            
-        user = User.objects.get(username=username)
+
+        if user == team.creator and team.members.count() > 1:
+            raise PermissionDenied("Entferne erst alle anderen Mitglieder, bevor du das Team verlassen kannst.")
+
         team.members.remove(user)
         team.save()
         return RemoveMemberMutation(team=team)
