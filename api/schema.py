@@ -274,6 +274,31 @@ class RemoveMemberMutation(relay.ClientIDMutation):
         team.save()
         return RemoveMemberMutation(team=team)
 
+class ModeEnum(graphene.Enum):
+    TRAIN = "train"
+    COMPETITION = "competition"
+
+class SetModeMutation(relay.ClientIDMutation):
+    """Set mode of the team"""
+    class Input:
+        team_id = graphene.ID(required=True)
+        mode = ModeEnum(required=True)
+
+    team = graphene.Field(TeamNode)
+
+    @classmethod
+    @login_required
+    def mutate_and_get_payload(cls, root, info, team_id, mode):
+        team = Team.objects.get(pk=from_global_id(team_id)[1])
+
+        if team.creator != info.context.user:
+            raise PermissionDenied("Nur der Teamersteller kann den Modus ändern.")
+        if team.state not in ["done", "open"]:
+            raise PermissionDenied("In dieser Phase kann der Modus nicht geändert werden.")
+            
+        team.mode = mode
+        team.save()
+        return SetModeMutation(team=team)
 
 class Mutation(ObjectType):
     next_phase = NextPhaseMutation.Field()
@@ -283,6 +308,7 @@ class Mutation(ObjectType):
     create_team = CreateTeamMutation.Field()
     add_member = AddMemberMutation.Field()
     remove_member = RemoveMemberMutation.Field()
+    set_mode = SetModeMutation.Field()
 
 
 class Query(ObjectType):
