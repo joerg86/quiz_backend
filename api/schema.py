@@ -279,6 +279,10 @@ class RemoveMemberMutation(relay.ClientIDMutation):
 
         team.members.remove(user)
         team.save()
+        
+        if user == team.creator:
+            team.delete()
+
         return RemoveMemberMutation(team=team)
 
 class ModeEnum(graphene.Enum):
