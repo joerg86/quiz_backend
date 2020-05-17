@@ -32,15 +32,33 @@ class AnswerNode(DjangoObjectType):
         fields = ("author", "answer", "score")
         interfaces = (relay.Node,)
 
+class QuestionFilter(django_filters.FilterSet):
+    query = django_filters.CharFilter(method="query_filter")
+    own = django_filters.BooleanFilter(method="own_filter")
+
+    def query_filter(self, queryset, name, value):
+        return queryset.filter(Q(question__icontains=value) | Q(model_answer__icontains=value)).distinct()
+
+    def own_filter(self, queryset, name, value):
+        if value:
+            return queryset.filter(author=self.request.user)
+        else:
+            return queryset
+
+    class Meta:
+        model = Question
+        fields = ["topic"]
+
+
 class QuestionNode(DjangoObjectType):
     class Meta:
         model = Question
         fields = ("question", "model_answer", "author", "answer_set", "topic")
-        filter_fields = {
-            "question": ["icontains"],
-            "topic": ["exact"]
-        }
+
         interfaces = (relay.Node,)
+
+
+
 
 class MembershipNode(DjangoObjectType):
     score = graphene.Int()
@@ -350,7 +368,7 @@ class Query(ObjectType):
     topic = relay.Node.Field(TopicNode)
 
     topics = DjangoFilterConnectionField(TopicNode, filterset_class=TopicFilter)
-    questions = DjangoFilterConnectionField(QuestionNode)
+    questions = DjangoFilterConnectionField(QuestionNode, filterset_class=QuestionFilter)
     teams = DjangoFilterConnectionField(TeamNode)
     users = DjangoFilterConnectionField(UserNode)
 
