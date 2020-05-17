@@ -227,6 +227,30 @@ class PostAnswerMutation(relay.ClientIDMutation):
 
         return PostAnswerMutation(team=team)
 
+class UpdateQuestionMutation(relay.ClientIDMutation):
+    """Update a question"""
+    class Input:
+        id = graphene.ID(required=True)
+        question = graphene.String(required=True)
+        model_answer = graphene.String(required=True)
+
+    question = graphene.Field(QuestionNode)
+
+    @classmethod
+    @login_required
+    def mutate_and_get_payload(cls, root, info, id, question, model_answer):
+        q = Question.objects.get(pk=from_global_id(id)[1])
+
+        if not q.author == info.context.user:
+            raise PermissionDenied("Du darfst nur deine eigenen Fragen bearbeiten.")
+
+        q.question = question
+        q.model_answer = model_answer
+
+        q.save()
+        return UpdateQuestionMutation(question=q)
+
+
 class ScoreEnum(graphene.Enum):
     RIGHT = 3
     PARTIAL = 1
@@ -326,6 +350,26 @@ class RemoveMemberMutation(relay.ClientIDMutation):
 
         return RemoveMemberMutation(team=team)
 
+class RemoveQuestionMutation(relay.ClientIDMutation):
+    """Remove a member from a team"""
+    class Input:
+        id = graphene.ID(required=True)
+
+    question = graphene.Field(QuestionNode)
+
+    @classmethod
+    @login_required
+    def mutate_and_get_payload(cls, root, info, id):
+        question = Question.objects.get(pk=from_global_id(id)[1])
+
+        if not question.author == info.context.user:
+            raise PermissionDenied("Du kannst nur deine eigenen Fragen löschen.")
+
+        question.delete()
+
+        return RemoveQuestionMutation(question=question)
+
+
 class ModeEnum(graphene.Enum):
     TRAIN = "train"
     COMPETITION = "competition"
@@ -356,16 +400,19 @@ class Mutation(ObjectType):
     next_phase = NextPhaseMutation.Field()
     post_question = PostQuestionMutation.Field()
     post_answer = PostAnswerMutation.Field()
+    update_question = UpdateQuestionMutation.Field()
     score_answer = ScoreAnswerMutation.Field()
     create_team = CreateTeamMutation.Field()
     add_member = AddMemberMutation.Field()
     remove_member = RemoveMemberMutation.Field()
+    remove_question = RemoveQuestionMutation.Field()
     set_mode = SetModeMutation.Field()
 
 
 class Query(ObjectType):
     team = relay.Node.Field(TeamNode)
     topic = relay.Node.Field(TopicNode)
+    question = relay.Node.Field(QuestionNode)
 
     topics = DjangoFilterConnectionField(TopicNode, filterset_class=TopicFilter)
     questions = DjangoFilterConnectionField(QuestionNode, filterset_class=QuestionFilter)
