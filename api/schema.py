@@ -10,7 +10,7 @@ from graphql_jwt.decorators import login_required
 from graphene_subscriptions.events import UPDATED 
 from django.core.exceptions import PermissionDenied
 import django_filters
-from django.db.models import Q
+from django.db.models import Q, Count
 
 class UserNode(DjangoObjectType):
     is_me = graphene.Boolean()
@@ -20,7 +20,7 @@ class UserNode(DjangoObjectType):
 
     class Meta:
         model = User
-        fields = ["username", "last_name", "first_name", "id"]
+        fields = ["username", "last_name", "first_name", "id","email"]
         filter_fields = {
             "username": ["icontains"]
         }
@@ -35,8 +35,11 @@ class AnswerNode(DjangoObjectType):
 class QuestionNode(DjangoObjectType):
     class Meta:
         model = Question
-        fields = ("question", "model_answer", "author", "answer_set")
-        filter_fields = ("question", "model_answer")
+        fields = ("question", "model_answer", "author", "answer_set", "topic")
+        filter_fields = {
+            "question": ["icontains"],
+            "topic": ["exact"]
+        }
         interfaces = (relay.Node,)
 
 class MembershipNode(DjangoObjectType):
@@ -78,9 +81,29 @@ class TopicFilter(django_filters.FilterSet):
 
     class Meta:
         model = Topic
-        fields = ("name", "code")
+        fields = {
+            "name": ["exact"],
+            "code": ["exact"],
+        }
+
+    order_by = django_filters.OrderingFilter(
+        fields=(
+            ("question_count", "questionCount"),
+        )
+    )
+
+    @property
+    def qs(self):
+        # The query context can be found in self.request.
+        return super(TopicFilter, self).qs.annotate(question_count=Count("question"))
+
 
 class TopicNode(DjangoObjectType):
+    question_count = graphene.Int()
+
+    def resolve_question_count(parent, info):
+        return getattr(parent, "question_count")
+
     class Meta: 
         model = Topic
         interfaces = (relay.Node,)
@@ -279,7 +302,7 @@ class RemoveMemberMutation(relay.ClientIDMutation):
 
         team.members.remove(user)
         team.save()
-        
+
         if user == team.creator:
             team.delete()
 
