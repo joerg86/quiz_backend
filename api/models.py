@@ -21,6 +21,7 @@ class Question(models.Model):
     topic = models.ForeignKey("Topic", on_delete=models.CASCADE)
     question = models.TextField("Frage")
     model_answer = models.TextField("Musterantwort")
+    done = models.BooleanField("Erledigt", help_text="Frage wurde von allen beantwortet", default=False)
 
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -99,6 +100,9 @@ class Team(models.Model):
                 ms.right = scores.filter(score=3).count()
                 ms.wrong = scores.filter(score=0).count()
                 ms.save()
+
+            self.current_question.done = True
+            self.current_question.save()
 
             self.current_question = self.questions.filter(answer=None).first()
             if self.current_question:

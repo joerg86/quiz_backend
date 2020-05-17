@@ -10,7 +10,7 @@ from graphql_jwt.decorators import login_required
 from graphene_subscriptions.events import UPDATED 
 from django.core.exceptions import PermissionDenied
 import django_filters
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Case, When, IntegerField
 
 class UserNode(DjangoObjectType):
     is_me = graphene.Boolean()
@@ -74,6 +74,20 @@ class MembershipNode(DjangoObjectType):
 
 class TeamNode(DjangoObjectType):
     user_done = graphene.Boolean()
+    question_count = graphene.Int()
+    question_number = graphene.Int()
+
+    def resolve_question_number(parent, info):
+        if hasattr(parent, "question_number"):
+            return parent.question_number
+        else:
+            return parent.questions.filter(done=True).count() + 1
+
+    def resolve_question_count(parent, info):
+        if hasattr(parent, "question_count"):
+            return parent.question_count
+        else:
+            return parent.questions.count()
 
     def resolve_user_done(parent, info):
         return parent.user_done(info.context.user)
@@ -113,14 +127,16 @@ class TopicFilter(django_filters.FilterSet):
     @property
     def qs(self):
         # The query context can be found in self.request.
-        return super(TopicFilter, self).qs.annotate(question_count=Count("question"))
+        return super(TopicFilter, self).qs.annotate(
+            question_count=Count("question"),
+        )
 
 
 class TopicNode(DjangoObjectType):
     question_count = graphene.Int()
 
     def resolve_question_count(parent, info):
-        return getattr(parent, "question_count")
+        return getattr(parent, "question_count", None)
 
     class Meta: 
         model = Topic
